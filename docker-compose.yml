@@ -1,0 +1,10 @@
+services:
+  backend-api:
+    build:
+      context: ./backend-api
+      dockerfile: Dockerfile
+    container_name: backend-api
+    ports:
+      - "7000:7000/udp"
+    network_mode: host
+    restart: unless-stopped

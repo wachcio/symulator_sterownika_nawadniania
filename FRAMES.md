@@ -54,4 +54,4 @@ pia - dzień tygodnia (pon, wto, sro, czw, pia, sob, nie)
 8 - numer kompilacji
 02.06.2020 - data kompilacji
 15:44:20 - godzina kompilacji
- , ; - stałe dwie spacje i zakończenie średnikiem 
+, ; – jeśli sekcje wyłączone to dwie spacje i zakończenie średnikiem. Jeśli nawodnienie włączone to godzina i data w formacie hh:mm:ss,rrrr-MM-dd np 15:13:13,2025-09-27;

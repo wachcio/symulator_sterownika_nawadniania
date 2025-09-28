@@ -11,6 +11,8 @@ let deviceState = {
     customDateTime: null,
     sekcje: [0, 0, 0, 0, 0, 0, 0, 0],
     grupy: [0, 0, 0, 0, 0, 0, 0, 0],
+    irrigationActive: false,
+    irrigationStartTime: null,
     ustawienia: [
         [0, 1, 1, -1, 22, 0, 22, 20, 20],
         [1, 2, 1, -1, 22, 25, 22, 45, 20],
@@ -66,10 +68,10 @@ function generateFrame() {
         dayName,
         '2',
         '14.0',
-        '8',
-        deviceState.sekcje.join(',') + ',0',
-        '8',
-        deviceState.grupy.join(',') + ',0',
+        '8,0',
+        deviceState.sekcje.join(','),
+        '8,0',
+        deviceState.grupy.join(','),
         '16'
     ];
 
@@ -81,20 +83,36 @@ function generateFrame() {
         frameData.push(grupa.join(','));
     });
 
-    frameData.push('1.2.0', '8', '02.06.2020', '15:44:20', ' , ');
+    frameData.push('1.2.0', '8', '02.06.2020', '15:44:20');
+
+    // Last two values: if irrigation is active, show time and date, otherwise spaces
+    if (deviceState.irrigationActive && deviceState.irrigationStartTime) {
+        const irrigationDate = new Date(deviceState.irrigationStartTime);
+        const timeStr = irrigationDate.toTimeString().split(' ')[0];
+        const dateStr = irrigationDate.toISOString().split('T')[0];
+        frameData.push(timeStr, dateStr);
+    } else {
+        frameData.push(' ', ' ');
+    }
 
     return frameData.join(',') + ';';
 }
 
 function handleCommand(command, clientInfo) {
     const cmd = command.trim();
+
+    // Ignore our own broadcast frames
+    if (cmd.startsWith('wachcio_nawodnienie_v3')) {
+        return null;
+    }
+
     console.log(`Received command: ${cmd} from ${clientInfo.address}:${clientInfo.port}`);
 
     if (cmd === 'AT+TESTP') {
         return 'OK';
     }
 
-    if (cmd.startsWith('AT+ATYWNOSC=')) {
+    if (cmd.startsWith('AT+AKTYWNOSC=')) {
         const value = parseInt(cmd.split('=')[1]);
         if (value === 0 || value === 1) {
             deviceState.aktywnosc = value;
@@ -133,12 +151,23 @@ function handleCommand(command, clientInfo) {
         const minuty = parseInt(params[1]);
 
         if (sekcja === -1 && minuty === -1) {
+            // Turn off all sections and set irrigation inactive
             deviceState.sekcje = [0, 0, 0, 0, 0, 0, 0, 0];
+             deviceState.grupy = [0, 0, 0, 0, 0, 0, 0, 0];
+            deviceState.irrigationActive = false;
+            deviceState.irrigationStartTime = null;
             return 'OK';
         }
 
         if (sekcja >= 1 && sekcja <= 8 && minuty > 0) {
-            deviceState.sekcje[sekcja - 1] = 1;
+            // Turn on specific section and set irrigation active
+            // AT+SEKCJA=2,20 changes position 13, AT+SEKCJA=3,20 changes position 14
+            // Position 13 = index 3 in sekcje array, so sekcja N changes index N+1
+            deviceState.sekcje = [0, 0, 0, 0, 0, 0, 0, 0];
+            deviceState.grupy = [0, 0, 0, 0, 0, 0, 0, 0];
+            deviceState.sekcje[sekcja -1] = 1;
+            deviceState.irrigationActive = true;
+            deviceState.irrigationStartTime = deviceState.customDateTime || new Date().toISOString();
             return 'OK';
         }
         return 'ERROR';
@@ -150,16 +179,41 @@ function handleCommand(command, clientInfo) {
         const minuty = parseInt(params[1]);
 
         if (grupa === -1 && minuty === -1) {
+            // Turn off all sections and set irrigation inactive
             deviceState.grupy = [0, 0, 0, 0, 0, 0, 0, 0];
+            deviceState.sekcje = [0, 0, 0, 0, 0, 0, 0, 0];
+            deviceState.irrigationActive = false;
+            deviceState.irrigationStartTime = null;
             return 'OK';
         }
 
         if (grupa >= 1 && grupa <= 8 && minuty > 0) {
-            deviceState.grupy[grupa - 1] = 1;
+            deviceState.grupy = [0, 0, 0, 0, 0, 0, 0, 0];
+             deviceState.grupy = [0, 0, 0, 0, 0, 0, 0, 0];
+            deviceState.grupy[grupa -1] = 1;
+            deviceState.irrigationActive = true;
+            deviceState.irrigationStartTime = deviceState.customDateTime || new Date().toISOString();
             return 'OK';
         }
         return 'ERROR';
     }
+
+    // if (cmd.startsWith('AT+GRUPA=')) {
+    //     const params = cmd.split('=')[1].split(',');
+    //     const grupa = parseInt(params[0]);
+    //     const minuty = parseInt(params[1]);
+
+    //     if (grupa === -1 && minuty === -1) {
+    //         deviceState.grupy = [0, 0, 0, 0, 0, 0, 0, 0];
+    //         return 'OK';
+    //     }
+
+    //     if (grupa >= 1 && grupa <= 8 && minuty > 0) {
+    //         deviceState.grupy[grupa - 1] = 1;
+    //         return 'OK';
+    //     }
+    //     return 'ERROR';
+    // }
 
     if (cmd.startsWith('AT+UST=')) {
         const params = cmd.split('=')[1].split(',').map(p => parseInt(p));
@@ -188,8 +242,11 @@ udpServer.on('message', (msg, clientInfo) => {
     const command = msg.toString();
     const response = handleCommand(command, clientInfo);
 
-    const responseBuffer = Buffer.from(response);
-    udpServer.send(responseBuffer, 0, responseBuffer.length, clientInfo.port, clientInfo.address);
+    // Only send response if it's not null (i.e., not our own broadcast)
+    if (response !== null) {
+        const responseBuffer = Buffer.from(response);
+        udpServer.send(responseBuffer, 0, responseBuffer.length, clientInfo.port, clientInfo.address);
+    }
 });
 
 udpServer.on('listening', () => {

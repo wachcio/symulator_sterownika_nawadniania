@@ -226,7 +226,7 @@ function handleCommand(command, clientInfo) {
       .split(",")
       .map((p) => parseInt(p));
     const pozycja = params[0];
-
+    params.splice(3, 0, -1);
     if (pozycja >= 0 && pozycja <= 15) {
       deviceState.ustawienia[pozycja] = params;
       return "OK";

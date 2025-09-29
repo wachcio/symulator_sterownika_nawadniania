@@ -193,33 +193,34 @@ function handleCommand(command, clientInfo) {
     }
 
     if (grupa >= 1 && grupa <= 8 && minuty > 0) {
-      deviceState.grupy = [0, 0, 0, 0, 0, 0, 0, 0];
+      deviceState.sekcje = [0, 0, 0, 0, 0, 0, 0, 0];
       deviceState.grupy = [0, 0, 0, 0, 0, 0, 0, 0];
       deviceState.grupy[grupa - 1] = 1;
+
+      let wyłączone_sekcje_w_grupie = 0;
+      for (let i = 2; i <= 9; i++) {
+        if (deviceState.grupySekcji[grupa][i] == 1) {
+          deviceState.sekcje[i - 2] = 1;
+        } else {
+          deviceState.sekcje[i - 2] = 0;
+          wyłączone_sekcje_w_grupie++;
+        }
+      }
+
       deviceState.irrigationActive = true;
       deviceState.irrigationStartTime =
         deviceState.customDateTime || new Date().toISOString();
+
+      if (wyłączone_sekcje_w_grupie == 8) {
+        deviceState.sekcje = [0, 0, 0, 0, 0, 0, 0, 0];
+        deviceState.grupy = [0, 0, 0, 0, 0, 0, 0, 0];
+        deviceState.irrigationStartTime = null;
+      }
       return "OK";
     }
     return "ERROR";
   }
 
-  // if (cmd.startsWith('AT+GRUPA=')) {
-  //     const params = cmd.split('=')[1].split(',');
-  //     const grupa = parseInt(params[0]);
-  //     const minuty = parseInt(params[1]);
-
-  //     if (grupa === -1 && minuty === -1) {
-  //         deviceState.grupy = [0, 0, 0, 0, 0, 0, 0, 0];
-  //         return 'OK';
-  //     }
-
-  //     if (grupa >= 1 && grupa <= 8 && minuty > 0) {
-  //         deviceState.grupy[grupa - 1] = 1;
-  //         return 'OK';
-  //     }
-  //     return 'ERROR';
-  // }
 
   if (cmd.startsWith("AT+UST=")) {
     const params = cmd

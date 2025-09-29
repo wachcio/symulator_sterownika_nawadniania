@@ -234,6 +234,20 @@ function handleCommand(command, clientInfo) {
     return "ERROR";
   }
 
+  if (cmd.startsWith("AT+GR_UST=")) {
+    const params = cmd
+      .split("=")[1]
+      .split(",")
+      .map((p) => parseInt(p));
+    const pozycja = params[0];
+    params.splice(1, 0, 0);
+    if (pozycja >= 1 && pozycja <= 8) {
+      deviceState.grupySekcji[pozycja] = params;
+      //   return "OK";
+    }
+    return "ERROR";
+  }
+
   if (cmd.startsWith("AT+GRUPA_SEKCJA=")) {
     const value = parseInt(cmd.split("=")[1]);
     if (value === 1 || value === 2) {

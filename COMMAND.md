@@ -14,3 +14,6 @@ Komendy sterownika
     AT+UST=11,-1,-1,-1,-1,-1,-1,-1 – wyłącz ustawienia dla harmonogramu z pozycji 11
     AT+GRUPA_SEKCJA=1 – tryb pracy dla sekcji
     AT+GRUPA_SEKCJA=2 – tryb pracy dla grup
+    AT+GR_UST=4,0,0,0,0,0,0,1,1 - ustawia jako grupę 4 sekcje 7 i 8
+
+

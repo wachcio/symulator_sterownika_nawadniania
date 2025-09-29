@@ -100,6 +100,13 @@ function generateFrame() {
   return frameData.join(",") + ";";
 }
 
+function turn_off_irrigation() {
+  deviceState.grupy = [0, 0, 0, 0, 0, 0, 0, 0];
+  deviceState.sekcje = [0, 0, 0, 0, 0, 0, 0, 0];
+  deviceState.irrigationActive = false;
+  deviceState.irrigationStartTime = null;
+}
+
 function handleCommand(command, clientInfo) {
   const cmd = command.trim();
 
@@ -156,10 +163,7 @@ function handleCommand(command, clientInfo) {
 
     if (sekcja === -1 && minuty === -1) {
       // Turn off all sections and set irrigation inactive
-      deviceState.sekcje = [0, 0, 0, 0, 0, 0, 0, 0];
-      deviceState.grupy = [0, 0, 0, 0, 0, 0, 0, 0];
-      deviceState.irrigationActive = false;
-      deviceState.irrigationStartTime = null;
+      turn_off_irrigation();
       return "OK";
     }
 
@@ -185,10 +189,7 @@ function handleCommand(command, clientInfo) {
 
     if (grupa === -1 && minuty === -1) {
       // Turn off all sections and set irrigation inactive
-      deviceState.grupy = [0, 0, 0, 0, 0, 0, 0, 0];
-      deviceState.sekcje = [0, 0, 0, 0, 0, 0, 0, 0];
-      deviceState.irrigationActive = false;
-      deviceState.irrigationStartTime = null;
+      turn_off_irrigation();
       return "OK";
     }
 
@@ -212,15 +213,12 @@ function handleCommand(command, clientInfo) {
         deviceState.customDateTime || new Date().toISOString();
 
       if (wyłączone_sekcje_w_grupie == 8) {
-        deviceState.sekcje = [0, 0, 0, 0, 0, 0, 0, 0];
-        deviceState.grupy = [0, 0, 0, 0, 0, 0, 0, 0];
-        deviceState.irrigationStartTime = null;
+        turn_off_irrigation();
       }
       return "OK";
     }
     return "ERROR";
   }
-
 
   if (cmd.startsWith("AT+UST=")) {
     const params = cmd
